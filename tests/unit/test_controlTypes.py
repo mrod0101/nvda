@@ -10,6 +10,7 @@ import unittest
 import controlTypes
 import versionInfo
 from . import PlaceholderNVDAObject
+from controlTypes.processAndLabelStates import _processNegativeStates, _processPositiveStates
 
 
 class TestLabels(unittest.TestCase):
@@ -20,16 +21,24 @@ class TestLabels(unittest.TestCase):
 			if name.startswith("ROLE_"):
 				self.assertIsNotNone(controlTypes.roleLabels.get(const),msg="{name} has no label".format(name=name))
 
-	def test_roleLabels(self):
+	def test_role_displayString(self):
 		"""Test to check whether every role has its own display string"""
 		for role in controlTypes.Role:
 			role.displayString
 
-	def test_positiveStateLabels(self):
+	@unittest.skipIf(versionInfo.version_year >= 2022, "Deprecated code")
+	def test_legacy_positiveStateLabels(self):
 		"""Test to check whether every state has its own label in controlTypes.stateLabels"""
 		for name, const in vars(controlTypes).items():
 			if name.startswith("STATE_"):
 				self.assertIsNotNone(controlTypes.stateLabels.get(const),msg="{name} has no label".format(name=name))
+
+	def test_state_displayString(self):
+		"""Test to check whether every state has its own display string and negative display string"""
+		for state in controlTypes.State:
+			state.displayString
+			state.negativeDisplayString
+
 
 class TestProcessStates(unittest.TestCase):
 
@@ -37,32 +46,32 @@ class TestProcessStates(unittest.TestCase):
 		self.obj = PlaceholderNVDAObject()
 		self.obj.role = controlTypes.Role.CHECKBOX
 		self.obj.states = {
-			controlTypes.STATE_FOCUSABLE,
-			controlTypes.STATE_INVALID_ENTRY,
-			controlTypes.STATE_FOCUSED,
-			controlTypes.STATE_REQUIRED
+			controlTypes.State.FOCUSABLE,
+			controlTypes.State.INVALID_ENTRY,
+			controlTypes.State.FOCUSED,
+			controlTypes.State.REQUIRED
 		}
 
 	def test_positiveStates(self):
 		self.assertSetEqual(
-			controlTypes.processPositiveStates(
+			_processPositiveStates(
 				self.obj.role,
 				self.obj.states,
 				controlTypes.OutputReason.FOCUS,
 				self.obj.states
 			),
-			{controlTypes.STATE_INVALID_ENTRY, controlTypes.STATE_REQUIRED}
+			{controlTypes.State.INVALID_ENTRY, controlTypes.State.REQUIRED}
 		)
 
 	def test_negativeStates(self):
 		self.assertSetEqual(
-			controlTypes.processNegativeStates(
+			_processNegativeStates(
 				self.obj.role,
 				self.obj.states,
 				controlTypes.OutputReason.FOCUS,
 				None
 			),
-			{controlTypes.STATE_CHECKED}
+			{controlTypes.State.CHECKED}
 		)
 
 class TestStateOrder(unittest.TestCase):
@@ -71,11 +80,11 @@ class TestStateOrder(unittest.TestCase):
 		obj = PlaceholderNVDAObject()
 		obj.role = controlTypes.Role.CHECKBOX
 		obj.states = {
-			controlTypes.STATE_CHECKED,
-			controlTypes.STATE_FOCUSABLE,
-			controlTypes.STATE_FOCUSED,
-			controlTypes.STATE_SELECTED,
-			controlTypes.STATE_SELECTABLE
+			controlTypes.State.CHECKED,
+			controlTypes.State.FOCUSABLE,
+			controlTypes.State.FOCUSED,
+			controlTypes.State.SELECTED,
+			controlTypes.State.SELECTABLE
 		}
 		self.assertEqual(
 			controlTypes.processAndLabelStates(
@@ -85,17 +94,17 @@ class TestStateOrder(unittest.TestCase):
 				obj.states,
 				None
 			),
-			[controlTypes.stateLabels[controlTypes.STATE_CHECKED]]
+			[controlTypes.State.CHECKED.displayString]
 		)
 
 	def test_negativeMergedStatesOutput(self):
 		obj = PlaceholderNVDAObject()
 		obj.role = controlTypes.Role.CHECKBOX
 		obj.states = {
-			controlTypes.STATE_FOCUSABLE,
-			controlTypes.STATE_FOCUSED,
-			controlTypes.STATE_SELECTED,
-			controlTypes.STATE_SELECTABLE
+			controlTypes.State.FOCUSABLE,
+			controlTypes.State.FOCUSED,
+			controlTypes.State.SELECTED,
+			controlTypes.State.SELECTABLE
 		}
 		self.assertEqual(
 			controlTypes.processAndLabelStates(
@@ -105,5 +114,5 @@ class TestStateOrder(unittest.TestCase):
 				obj.states,
 				None
 			),
-			[controlTypes.negativeStateLabels[controlTypes.STATE_CHECKED]]
+			[controlTypes.State.CHECKED.negativeDisplayString]
 		)

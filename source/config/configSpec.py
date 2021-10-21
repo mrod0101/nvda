@@ -205,6 +205,7 @@ schemaVersion = integer(min=0, default={latestSchemaVersion})
 	reportLinks = boolean(default=true)
 	reportGraphics = boolean(default=True)
 	reportComments = boolean(default=true)
+	reportBookmarks = boolean(default=true)
 	reportLists = boolean(default=true)
 	reportHeadings = boolean(default=true)
 	reportBlockQuotes = boolean(default=true)
@@ -231,6 +232,7 @@ schemaVersion = integer(min=0, default={latestSchemaVersion})
 
 [annotations]
 	reportDetails = boolean(default=false)
+	reportAriaDescription = boolean(default=true)
 
 [terminals]
 	speakPasswords = boolean(default=false)
@@ -279,6 +281,8 @@ schemaVersion = integer(min=0, default={latestSchemaVersion})
 [featureFlag]
 	# 0:default, 1:yes, 2:no
 	cancelExpiredFocusSpeech = integer(0, 2, default=0)
+	# 0:Only in test versions, 1:yes
+	playErrorSound = integer(0, 1, default=0)
 """
 
 #: The configuration specification

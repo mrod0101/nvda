@@ -3,10 +3,7 @@
 # See the file COPYING for more details.
 # Copyright (C) 2007-2020 NV Access Limited
 
-from ctypes import *
-from ctypes.wintypes import *
 import api
-import winKernel
 import controlTypes
 import speech
 import UIAHandler
@@ -36,19 +33,6 @@ TVGN_PREVIOUS=2
 TVGN_PARENT=3
 TVGN_CHILD=4
 
-class TVItemStruct(Structure):
-	_fields_=[
-		('mask',c_uint),
-		('hItem',c_void_p),
-		('state',c_uint),
-		('stateMask',c_uint),
-		('pszText',LPWSTR),
-		('cchTextMax',c_int),
-		('iImage',c_int),
-		('iSelectedImage',c_int),
-		('cChildren',c_int),
-		('lParam',LPARAM),
-	]
 
 class TreeView(IAccessible):
 
@@ -81,11 +65,11 @@ class TreeViewItem(IAccessible):
 		itemStates=watchdog.cancellableSendMessage(self.windowHandle,TVM_GETITEMSTATE,hItem,TVIS_STATEIMAGEMASK)
 		ch=(itemStates>>12)&3
 		if ch>0:
-			states.add(controlTypes.STATE_CHECKABLE)
+			states.add(controlTypes.State.CHECKABLE)
 		if ch==2:
-			states.add(controlTypes.STATE_CHECKED)
+			states.add(controlTypes.State.CHECKED)
 		elif ch==3:
-			states.add(controlTypes.STATE_HALFCHECKED)
+			states.add(controlTypes.State.HALFCHECKED)
 		return states
 
 	def _get_value(self):
@@ -195,7 +179,7 @@ class TreeViewItem(IAccessible):
 		return info
 
 	def event_stateChange(self):
-		announceContains = self is api.getFocusObject() and controlTypes.STATE_EXPANDED in self.states and controlTypes.STATE_EXPANDED not in getattr(self,'_speakObjectPropertiesCache',{}).get('states',frozenset())
+		announceContains = self is api.getFocusObject() and controlTypes.State.EXPANDED in self.states and controlTypes.State.EXPANDED not in getattr(self,'_speakObjectPropertiesCache',{}).get('states',frozenset())
 		super(TreeViewItem,self).event_stateChange()
 		if announceContains:
 			speech.speakMessage(_("%s items")%self.childCount)

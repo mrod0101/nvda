@@ -315,7 +315,7 @@ There are some key commands that are useful when moving with the System focus:
 | Report current focus | NVDA+tab | NVDA+tab | announces the current object or control that has the System focus. Pressing twice will spell the information |
 | Report title | NVDA+t | NVDA+t | Reports the title of the currently active window. Pressing twice will spell the information. Pressing three times will copy it to the clipboard |
 | Read active window | NVDA+b | NVDA+b | reads all the controls in the currently active window (useful for dialogs) |
-| Report Status Bar | NVDA+end | NVDA+shift+end | Reports the Status Bar if NVDA finds one. It also moves the navigator object to this location. Pressing twice will spell the information. Pressing three times will copy it to the clipboard |
+| Report Status Bar | NVDA+end | NVDA+shift+end | Reports the Status Bar if NVDA finds one. Pressing twice will spell the information. Pressing three times will copy it to the clipboard |
 %kc:endInclude
 
 ++ Navigating with the System Caret ++[SystemCaret]
@@ -381,6 +381,7 @@ To navigate by object, use the following commands:
 | Activate current navigator object | NVDA+numpadEnter | NVDA+enter | double-tap | Activates the current navigator object (similar to clicking with the mouse or pressing space when it has the system focus) |
 | Move System focus or caret to current review position | NVDA+shift+numpadMinus | NVDA+shift+backspace | none | pressed once Moves the System focus to the current navigator object, pressed twice moves the system caret to the position of the review cursor |
 | Report review cursor location | NVDA+numpadDelete | NVDA+delete | none | Reports information about the location of the text or object at the review cursor. For example, this might include the percentage through the document, the distance from the edge of the page or the exact screen position. Pressing twice may provide further detail. |
+| Move review cursor to status bar | none | none | none | Reports the Status Bar if NVDA finds one. It also moves the navigator object to this location. |
 %kc:endInclude
 
 Note: numpad keys require the Num Lock to be turned off to work properly.
@@ -789,14 +790,15 @@ When Visual Highlight is enabled in the [vision category #VisionSettings] of the
 ++ Screen Curtain ++[VisionScreenCurtain]
 As a blind or vision impaired user, it is often not possible or necessary to see the contents of the screen.
 Furthermore, it might be hard to ensure that there isn't someone looking over your shoulder.
-For this situation, NVDA contains a feature called "screen curtain" which can be enabled to make the screen black.
+For this situation, NVDA contains a feature called "Screen Curtain" which can be enabled to make the screen black.
 
 You can enable the Screen Curtain in the [vision category #VisionSettings] of the [NVDA Settings #NVDASettings] dialog.
 
-When the screen curtain is active some tasks directly based on what appears on the screen such as performing [OCR #Win10Ocr] or taking a screenshot cannot be achieved.
+When the Screen Curtain is active some tasks directly based on what appears on the screen such as performing [OCR #Win10Ocr] or taking a screenshot cannot be achieved.
 
-To ensure security, confirm that the screen curtain works properly with new or experimental versions of Windows.
-When using NVDA releases older than 2021.2 and Windows newer than Windows 10 21H2, screen curtain may fail to work without warning.
+Due to a change in the Windows Magnification API, Screen Curtain had to be updated to support the newest versions of Windows.
+Use NVDA 2021.2 to activate Screen Curtain with Windows 10 21H2 (10.0.19044) or later.
+For security purposes, when using a new version of Windows, get visual confirmation that the Screen Curtain makes the screen entirely black.
 
 + Content Recognition +[ContentRecognition]
 When authors don't provide sufficient information for a screen reader user to determine the content of something, various tools can be used to attempt to recognize the content from an image.
@@ -812,17 +814,17 @@ Once recognition is complete, the result will be presented in a document similar
 Pressing enter or space will activate (normally click) the text at the cursor if possible.
 Pressing escape dismisses the recognition result.
 
-++ Windows 10 OCR ++[Win10Ocr]
+++ Windows OCR ++[Win10Ocr]
 Windows 10 and later includes OCR for many languages.
 NVDA can use this to recognize text from images or inaccessible applications.
 
-You can set the language to use for text recognition in the [Windows 10 OCR category #Win10OcrSettings] of the [NVDA Settings #NVDASettings] dialog.
+You can set the language to use for text recognition in the [Windows OCR category #Win10OcrSettings] of the [NVDA Settings #NVDASettings] dialog.
 Additional languages can be installed by opening the Start menu, choosing Settings, selecting Time & Language -> Region & Language and then choosing Add a language.
 
-Windows 10 OCR may be partially or fully incompatible with [NVDA vision enhancements #Vision] or other external visual aids. You will need to disable these aids before proceeding to a recognition.
+Windows OCR may be partially or fully incompatible with [NVDA vision enhancements #Vision] or other external visual aids. You will need to disable these aids before proceeding to a recognition.
 
 %kc:beginInclude
-To recognize the text in the current navigator object using Windows 10 OCR, press NVDA+r.
+To recognize the text in the current navigator object using Windows OCR, press NVDA+r.
 %kc:endInclude
 
 + Application Specific Features +[ApplicationSpecificFeatures]
@@ -1584,7 +1586,8 @@ To toggle simple review mode from anywhere, please assign a custom gesture using
 
 +++ Object Presentation (NVDA+control+o) +++[ObjectPresentationSettings]
 The Object Presentation category in the NVDA Settings dialog is used to set how much information NVDA will present about controls such as description, position information and so on.
-This category contains the following options:
+These options don't typically apply to browse mode.
+These options typically apply to focus reporting and NVDA object navigation, but not reading text content e.g. browse mode.
 
 ==== Report tooltips ====[ObjectPresentationReportToolTips]
 A checkbox that when checked tells NVDA to report tooltips as they appear.
@@ -1749,11 +1752,12 @@ You can configure reporting of:
  - Font attributes
  - Superscripts and subscripts
  - Emphasis
- - Marked (Highlighted text)
+ - Highlighted (Marked) text
  - Style
  - Colours
 - Document information
  - Comments
+ - Bookmarks
  - Editor revisions
  - Spelling errors
 - Pages and spacing
@@ -1802,8 +1806,8 @@ The tone will increase in pitch every space, and for a tab, it will increase in 
 - Both Speech and Tones: This option reads indentation using both of the above methods.
 -
 
-+++ Windows 10 OCR Settings +++[Win10OcrSettings]
-The settings in this category allow you to configure [Windows 10 OCR #Win10Ocr].
++++ Windows OCR Settings +++[Win10OcrSettings]
+The settings in this category allow you to configure [Windows OCR #Win10Ocr].
 This category contains the following options:
 
 ==== Recognition language ====[Win10OcrSettingsRecognitionLanguage]
@@ -1839,12 +1843,12 @@ This has a major negative impact on performance, especially in applications like
 Therefore, when this option is enabled, NVDA will limit event registration to the system focus for most events.
 If you suffer from performance issues in one or more applications, We recommend you to try this functionality to see whether performance improves.
 
-==== Use UI automation to access Microsoft Word document controls when available ====[AdvancedSettingsUseUiaForWord]
-When this option is enabled, NVDA will try to use the Microsoft UI Automation accessibility API in order to fetch information from Microsoft Word document controls.
+==== Always use UI automation to access Microsoft Word document controls when available ====[AdvancedSettingsUseUiaForWord]
+When this option is enabled, NVDA will always try to use the Microsoft UI Automation accessibility API in order to fetch information from Microsoft Word document controls, even for less recent builds of Microsoft Office 2016/365.
 This includes Microsoft Word itself, and also the Microsoft Outlook message viewer and composer.
- For the most recent versions of Microsoft Office 2016/365 running on Windows 10 and later, UI Automation support is complete enough to provide access to Microsoft Word documents almost equal to NVDA's existing Microsoft Word support, with the added advantage that responsiveness is majorly increased.
-However, There may be some information which is either not exposed, or exposed incorrectly in some versions of Microsoft Office, which means this UI automation support cannot always be relied upon.
-We still do not recommend that  the majority of users turn this on by default, though we do welcome users of Office 2016/365 to test this feature and provide feedback.
+ For Microsoft Office with a build version of 16.0.13901 or greater, NVDA will always use UI Automation to access Microsoft Word documents no matter how this setting is configured. 
+For the most recent versions of Microsoft Office 2016/365 running on Windows 10 and later, UI Automation support is complete enough to provide access to Microsoft Word documents almost equal to NVDA's existing Microsoft Word support, with the added advantage that responsiveness is majorly increased.
+However, There may be some information which is either not exposed, or exposed incorrectly in some  older builds of Microsoft Office, which means this UI automation support cannot always be relied upon.
 
 ==== Use UI Automation to access the Windows Console when available ====[AdvancedSettingsConsoleUIA]
 When this option is enabled, NVDA will use a new, work in progress version of its support for Windows Console which takes advantage of [accessibility improvements made by Microsoft https://devblogs.microsoft.com/commandline/whats-new-in-windows-console-in-windows-10-fall-creators-update/]. This feature is highly experimental and is still incomplete, so its use is not yet recommended. However, once completed, it is anticipated that this new support will become the default, improving NVDA's performance and stability in Windows command consoles.
@@ -1862,12 +1866,21 @@ The combo box has the following options:
 - No: Don't use UIA, even if NVDA is unable to inject in process. This may be useful for developers debugging issues with IA2 and want to ensure that NVDA does not fall back to UIA.
 -
 
-==== Enable Experimental ARIA annotations support ====[Annotations]
-Used to enable features which add experimental support for ARIA annotations.
+==== Annotations ====[Annotations]
+This group of options is used to enable features which add experimental support for ARIA annotations.
 Some of these features may be incomplete.
 The following options exist: 
 - "Report details in browse mode": enables reporting if an object has details in browse mode.
 Reporting the summary of those details can be done by assigning a gesture using the [Input Gestures dialog #InputGestures].
+- "Report aria-description always":
+  When the source of ``accDescription`` is aria-description, the description is reported.
+  This is useful for annotations on the web.
+  Note:
+  - There are many sources for ``accDescription`` several have mixed or unreliable semantics.
+    Historically AT has not been able to differentiate sources of ``accDescription`` typically it wasn't spoken due to the mixed semantics.
+  - This option is in very early development, it relies on browser features not yet widely available.
+  - Expected to work with Chromium 92.0.4479.0+
+  -
 -
 
 ==== Use UI automation to access Microsoft  Excel spreadsheet controls when available ====[UseUiaForExcel]
@@ -1917,6 +1930,11 @@ With several historically popular GUI APIs, the text may be rendered with a tran
 The checkboxes in this list allow you to enable specific categories of debug messages in NVDA's log.
 Logging these messages can result in decreased performance and large log files.
 Only turn one of these on if specifically instructed to by an NVDA developer e.g. when debugging why a braille display driver is not functioning correctly.
+
+==== Play a sound for logged errors ====[PlayErrorSound]
+This option allows you to specify if NVDA will play an error sound in case an error is logged.
+Choosing Only in test versions (default) makes NVDA play error sounds only if the current NVDA version is a test version (alpha, beta or run from source).
+Choosing Yes allows to enable error sounds whatever your current NVDA version is.
 
 ++ miscellaneous Settings ++[MiscSettings]
 Besides the [NVDA Settings #NVDASettings] dialog, The Preferences sub-menu of the NVDA Menu contains several other items which are outlined below.

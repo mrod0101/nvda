@@ -8,6 +8,7 @@
 # jakubl7545, mltony
 # This file is covered by the GNU General Public License.
 # See the file COPYING for more details.
+
 import logging
 from abc import ABCMeta, abstractmethod
 import copy
@@ -45,6 +46,7 @@ import core
 import keyboardHandler
 import characterProcessing
 from . import guiHelper
+
 try:
 	import updateCheck
 except RuntimeError:
@@ -59,6 +61,10 @@ import weakref
 import time
 import keyLabels
 from .dpiScalingHelper import DpiScalingHelperMixinWithoutInit
+
+#: The size that settings panel text descriptions should be wrapped at.
+# Ensure self.scaleSize is used to adjust for OS scaling adjustments.
+PANEL_DESCRIPTION_WIDTH = 544
 
 class SettingsDialog(
 		DpiScalingHelperMixinWithoutInit,
@@ -83,6 +89,13 @@ class SettingsDialog(
 	"""
 
 	class MultiInstanceError(RuntimeError): pass
+
+	class MultiInstanceErrorWithDialog(MultiInstanceError):
+		dialog: 'SettingsDialog'
+
+		def __init__(self, dialog: 'SettingsDialog', *args: object) -> None:
+			self.dialog = dialog
+			super().__init__(*args)
 
 	class DialogState(IntEnum):
 		CREATED = 0
@@ -109,7 +122,10 @@ class SettingsDialog(
 				"State of _instances {!r}".format(multiInstanceAllowed, instancesState)
 			)
 		if state is cls.DialogState.CREATED and not multiInstanceAllowed:
-			raise SettingsDialog.MultiInstanceError("Only one instance of SettingsDialog can exist at a time")
+			raise SettingsDialog.MultiInstanceErrorWithDialog(
+				firstMatchingInstance,
+				"Only one instance of SettingsDialog can exist at a time",
+			)
 		if state is cls.DialogState.DESTROYED and not multiInstanceAllowed:
 			# the dialog has been destroyed by wx, but the instance is still available. This indicates there is something
 			# keeping it alive.
@@ -1047,7 +1063,11 @@ class SynthesizerSelectionDialog(SettingsDialog):
 
 		# Translators: This is a label for the audio ducking combo box in the Synthesizer Settings dialog.
 		duckingListLabelText = _("Audio d&ucking mode:")
-		self.duckingList=settingsSizerHelper.addLabeledControl(duckingListLabelText, wx.Choice, choices=audioDucking.audioDuckingModes)
+		self.duckingList = settingsSizerHelper.addLabeledControl(
+			duckingListLabelText,
+			wx.Choice,
+			choices=[mode.displayString for mode in audioDucking.AudioDuckingMode]
+		)
 		self.bindHelpEvent("SelectSynthesizerDuckingMode", self.duckingList)
 		index=config.conf['audio']['audioDuckingMode']
 		self.duckingList.SetSelection(index)
@@ -1908,6 +1928,14 @@ class InputCompositionPanel(SettingsPanel):
 
 
 class ObjectPresentationPanel(SettingsPanel):
+
+	panelDescription = _(
+		# Translators: This is a label appearing on the Object Presentation settings panel.
+		"Configure how much information NVDA will present about controls."
+		" These options apply to focus reporting and NVDA object navigation,"
+		" but not when reading text content e.g. web content with browse mode."
+	)
+
 	# Translators: This is the label for the object presentation panel.
 	title = _("Object Presentation")
 	helpId = "ObjectPresentationSettings"
@@ -1932,6 +1960,12 @@ class ObjectPresentationPanel(SettingsPanel):
 
 	def makeSettings(self, settingsSizer):
 		sHelper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
+
+		self.windowText = sHelper.addItem(
+			wx.StaticText(self, label=self.panelDescription)
+		)
+		self.windowText.Wrap(self.scaleSize(PANEL_DESCRIPTION_WIDTH))
+
 		# Translators: This is the label for a checkbox in the
 		# object presentation settings panel.
 		reportToolTipsText = _("Report &tooltips")
@@ -2209,7 +2243,7 @@ class DocumentFormattingPanel(SettingsPanel):
 
 		# Translators: This is the label for a checkbox in the
 		# document formatting settings panel.
-		highlightText = _("Mar&ked (highlighted text)")
+		highlightText = _("Highlighted (mar&ked) text")
 		self.highlightCheckBox = fontGroup.addItem(
 			wx.CheckBox(fontGroupBox, label=highlightText)
 		)
@@ -2242,6 +2276,12 @@ class DocumentFormattingPanel(SettingsPanel):
 		commentsText = _("No&tes and comments")
 		self.commentsCheckBox = docInfoGroup.addItem(wx.CheckBox(docInfoBox, label=commentsText))
 		self.commentsCheckBox.SetValue(config.conf["documentFormatting"]["reportComments"])
+
+		# Translators: This is the label for a checkbox in the
+		# document formatting settings panel.
+		bookmarksText = _("&Bookmarks")
+		self.bookmarksCheckBox = docInfoGroup.addItem(wx.CheckBox(docInfoBox, label=bookmarksText))
+		self.bookmarksCheckBox.SetValue(config.conf["documentFormatting"]["reportBookmarks"])
 
 		# Translators: This is the label for a checkbox in the
 		# document formatting settings panel.
@@ -2450,6 +2490,7 @@ class DocumentFormattingPanel(SettingsPanel):
 		)
 		config.conf["documentFormatting"]["reportColor"]=self.colorCheckBox.IsChecked()
 		config.conf["documentFormatting"]["reportComments"]=self.commentsCheckBox.IsChecked()
+		config.conf["documentFormatting"]["reportBookmarks"] = self.bookmarksCheckBox.IsChecked()
 		config.conf["documentFormatting"]["reportRevisions"]=self.revisionsCheckBox.IsChecked()
 		config.conf["documentFormatting"]["reportEmphasis"]=self.emphasisCheckBox.IsChecked()
 		config.conf["documentFormatting"]["reportHighlight"] = self.highlightCheckBox.IsChecked()
@@ -2506,8 +2547,8 @@ class TouchInteractionPanel(SettingsPanel):
 
 
 class UwpOcrPanel(SettingsPanel):
-	# Translators: The title of the Windows 10 OCR panel.
-	title = _("Windows 10 OCR")
+	# Translators: The title of the Windows OCR panel.
+	title = _("Windows OCR")
 	helpId = "Win10OcrSettings"
 
 	def makeSettings(self, settingsSizer):
@@ -2518,7 +2559,7 @@ class UwpOcrPanel(SettingsPanel):
 		languageChoices = [
 			languageHandler.getLanguageDescription(languageHandler.normalizeLanguage(lang))
 			for lang in self.languageCodes]
-		# Translators: Label for an option in the Windows 10 OCR dialog.
+		# Translators: Label for an option in the Windows OCR dialog.
 		languageLabel = _("Recognition &language:")
 		self.languageChoice = sHelper.addLabeledControl(languageLabel, wx.Choice, choices=languageChoices)
 		self.bindHelpEvent("Win10OcrSettingsRecognitionLanguage", self.languageChoice)
@@ -2603,7 +2644,7 @@ class AdvancedPanelControls(
 
 		# Translators: This is the label for a checkbox in the
 		#  Advanced settings panel.
-		label = _("Use UI Automation to access Microsoft &Word document controls when available")
+		label = _("Always use UI Automation to access Microsoft &Word document controls when available")
 		self.UIAInMSWordCheckBox = UIAGroup.addItem(wx.CheckBox(UIABox, label=label))
 		self.bindHelpEvent("AdvancedSettingsUseUiaForWord", self.UIAInMSWordCheckBox)
 		self.UIAInMSWordCheckBox.SetValue(config.conf["UIA"]["useInMSWordWhenAvailable"])
@@ -2671,6 +2712,15 @@ class AdvancedPanelControls(
 		self.annotationsDetailsCheckBox = AnnotationsGroup.addItem(wx.CheckBox(AnnotationsBox, label=label))
 		self.annotationsDetailsCheckBox.SetValue(config.conf["annotations"]["reportDetails"])
 		self.annotationsDetailsCheckBox.defaultValue = self._getDefaultValue(["annotations", "reportDetails"])
+
+		# Translators: This is the label for a checkbox in the
+		#  Advanced settings panel.
+		label = _("Report aria-description always")
+		self.ariaDescCheckBox: wx.CheckBox = AnnotationsGroup.addItem(
+			wx.CheckBox(AnnotationsBox, label=label)
+		)
+		self.ariaDescCheckBox.SetValue(config.conf["annotations"]["reportAriaDescription"])
+		self.ariaDescCheckBox.defaultValue = self._getDefaultValue(["annotations", "reportAriaDescription"])
 
 		# Translators: This is the label for a group of advanced options in the
 		#  Advanced settings panel
@@ -2838,6 +2888,20 @@ class AdvancedPanelControls(
 					self._getDefaultValue(['debugLog', x])
 			)
 		]
+		
+		# Translators: Label for the Play a sound for logged errors combobox, in the Advanced settings panel.
+		label = _("Play a sound for logged e&rrors:")
+		playErrorSoundChoices = (
+			# Translators: Label for a value in the Play a sound for logged errors combobox, in the Advanced settings.
+			pgettext("advanced.playErrorSound", "Only in NVDA test versions"),
+			# Translators: Label for a value in the Play a sound for logged errors combobox, in the Advanced settings.
+			pgettext("advanced.playErrorSound", "Yes"),
+		)
+		self.playErrorSoundCombo = debugLogGroup.addLabeledControl(label, wx.Choice, choices=playErrorSoundChoices)
+		self.bindHelpEvent("PlayErrorSound", self.playErrorSoundCombo)
+		self.playErrorSoundCombo.SetSelection(config.conf["featureFlag"]["playErrorSound"])
+		self.playErrorSoundCombo.defaultValue = self._getDefaultValue(["featureFlag", "playErrorSound"])
+		
 		self.Layout()
 
 	def onOpenScratchpadDir(self,evt):
@@ -2867,6 +2931,7 @@ class AdvancedPanelControls(
 			and self.reportTransparentColorCheckBox.GetValue() == self.reportTransparentColorCheckBox.defaultValue
 			and set(self.logCategoriesList.CheckedItems) == set(self.logCategoriesList.defaultCheckedItems)
 			and self.annotationsDetailsCheckBox.IsChecked() == self.annotationsDetailsCheckBox.defaultValue
+			and self.ariaDescCheckBox.IsChecked() == self.ariaDescCheckBox.defaultValue
 			and True  # reduce noise in diff when the list is extended.
 		)
 
@@ -2883,6 +2948,7 @@ class AdvancedPanelControls(
 		self.diffAlgoCombo.SetSelection(self.diffAlgoCombo.defaultValue == 'auto')
 		self.caretMoveTimeoutSpinControl.SetValue(self.caretMoveTimeoutSpinControl.defaultValue)
 		self.annotationsDetailsCheckBox.SetValue(self.annotationsDetailsCheckBox.defaultValue)
+		self.ariaDescCheckBox.SetValue(self.ariaDescCheckBox.defaultValue)
 		self.reportTransparentColorCheckBox.SetValue(self.reportTransparentColorCheckBox.defaultValue)
 		self.logCategoriesList.CheckedItems = self.logCategoriesList.defaultCheckedItems
 		self._defaultsRestored = True
@@ -2910,8 +2976,10 @@ class AdvancedPanelControls(
 			self.reportTransparentColorCheckBox.IsChecked()
 		)
 		config.conf["annotations"]["reportDetails"] = self.annotationsDetailsCheckBox.IsChecked()
+		config.conf["annotations"]["reportAriaDescription"] = self.ariaDescCheckBox.IsChecked()
 		for index,key in enumerate(self.logCategories):
 			config.conf['debugLog'][key]=self.logCategoriesList.IsChecked(index)
+		config.conf["featureFlag"]["playErrorSound"] = self.playErrorSoundCombo.GetSelection()
 
 class AdvancedPanel(SettingsPanel):
 	enableControlsCheckBox = None  # type: wx.CheckBox
@@ -2948,7 +3016,7 @@ class AdvancedPanel(SettingsPanel):
 		warningGroup.addItem(warningText)
 
 		self.windowText = warningGroup.addItem(wx.StaticText(warningBox, label=self.warningExplanation))
-		self.windowText.Wrap(self.scaleSize(544))
+		self.windowText.Wrap(self.scaleSize(PANEL_DESCRIPTION_WIDTH))
 
 		enableAdvancedControlslabel = _(
 			# Translators: This is the label for a checkbox in the Advanced settings panel.
@@ -4367,7 +4435,7 @@ class SpeechSymbolsDialog(SettingsDialog):
 			pass
 		addedSymbol.displayName = identifier
 		addedSymbol.replacement = ""
-		addedSymbol.level = characterProcessing.SYMLVL_ALL
+		addedSymbol.level = characterProcessing.SymbolLevel.ALL
 		addedSymbol.preserve = characterProcessing.SYMPRES_NEVER
 		self.symbols.append(addedSymbol)
 		self.symbolsList.ItemCount = len(self.symbols)
